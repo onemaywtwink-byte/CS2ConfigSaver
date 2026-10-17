@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS2 Config Saver</title>
+<style>
+:root {
+  --bg: #0e1014; --panel: #161920; --card: #1c2029; --field: #232834; --hover: #2a303d;
+  --line: #2c3240; --fg: #e7e9ee; --muted: #9aa3b3; --dim: #6b7486;
+  --accent: #f0a63a; --accent-2: #ffbe5c; --on-accent: #1a1204;
+  --ok: #4fd18b; --warn: #f0c03a; --danger: #ff6b78; --info: #6aa7ff;
+  --radius: 10px; --shadow: 0 10px 30px rgba(0,0,0,.45);
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --head: Bahnschrift, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font); overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--on-accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--hover); }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.app { display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
+/* ---------- шапка ---------- */
+header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.logo { display: flex; align-items: center; gap: 10px; font: 600 17px var(--head); letter-spacing: .3px; margin-right: auto; white-space: nowrap; }
+.logo b { color: var(--accent); }
+.logo .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #d9771f); display: grid; place-items: center; color: var(--on-accent); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--field); color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--danger); } .dot.warn { background: var(--warn); }
+
+.select { position: relative; }
+.select select { appearance: none; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 34px 7px 12px; min-width: 240px; cursor: pointer; }
+.select::after { content: ""; position: absolute; right: 13px; top: 50%; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+select option { background: var(--card); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); cursor: pointer; transition: background .15s, border-color .15s, transform .05s; white-space: nowrap; }
+.btn:hover { background: var(--hover); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn.primary:hover { background: var(--accent-2); }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { background: rgba(255,107,120,.12); border-color: rgba(255,107,120,.4); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover { background: var(--field); }
+.btn.icon { padding: 8px; min-width: 36px; }
+.btn.sm { min-height: 30px; padding: 5px 10px; font-size: 13px; }
+
+.banner { display: none; align-items: center; gap: 10px; padding: 9px 18px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+.banner.show { display: flex; }
+.banner.error { background: rgba(255,107,120,.1); color: #ffb3ba; }
+.banner.warn { background: rgba(240,192,58,.1); color: #f5d98a; }
+.banner.info { background: rgba(106,167,255,.08); color: #b7d2ff; }
+
+/* ---------- раскладка ---------- */
+.body { display: grid; grid-template-columns: 320px 1fr; min-height: 0; }
+aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--panel); }
+.side-head { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
+.side-head .row { display: flex; gap: 8px; align-items: center; }
+h2 { font: 600 15px var(--head); margin: 0; letter-spacing: .2px; }
+.search { position: relative; flex: 1; }
+.search input { width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px 7px 32px; }
+.search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--dim); }
+input::placeholder, textarea::placeholder { color: var(--dim); }
+.plist { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+.pitem { width: 100%; text-align: left; display: block; padding: 10px 12px; margin-bottom: 4px; border-radius: 9px; border: 1px solid transparent; background: transparent; cursor: pointer; transition: background .12s, border-color .12s; }
+.pitem:hover { background: var(--card); }
+.pitem.sel { background: var(--card); border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.pitem .t { display: flex; align-items: center; gap: 8px; font-weight: 600; overflow: hidden; }
+.pitem .t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pitem .m { color: var(--dim); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tag { font-size: 11px; padding: 1px 7px; border-radius: 5px; background: var(--field); color: var(--muted); }
+.tag.binds { color: var(--accent-2); background: rgba(240,166,58,.12); }
+.tag.imp { color: var(--info); background: rgba(106,167,255,.12); }
+.group-btn { display: flex; align-items: center; gap: 6px; width: 100%; background: none; border: 0; color: var(--muted); padding: 10px 6px 6px; cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+.group-btn svg { transition: transform .15s; }
+.group-btn.open svg { transform: rotate(90deg); }
+.side-foot { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid var(--line); }
+.side-foot .btn { flex: 1; }
+.empty-list { color: var(--dim); text-align: center; padding: 30px 10px; font-size: 13px; }
+
+main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.mhead { display: flex; align-items: flex-start; gap: 14px; padding: 16px 22px 12px; flex-wrap: wrap; }
+.mhead .title { flex: 1; min-width: 220px; }
+.mhead h1 { font: 600 21px var(--head); margin: 0; display: flex; align-items: center; gap: 10px; }
+.mhead .sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tabs { display: flex; gap: 2px; padding: 0 22px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { background: none; border: 0; padding: 10px 14px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+.tab:hover { color: var(--fg); }
+.tab.on { color: var(--fg); border-bottom-color: var(--accent); }
+.tab .n { font-size: 11px; background: var(--field); color: var(--muted); padding: 0 6px; border-radius: 6px; }
+.content { flex: 1; overflow-y: auto; padding: 18px 22px 24px; }
+
+.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.toolbar .grow { flex: 1; }
+.note { color: var(--muted); font-size: 12.5px; }
+.alert { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 9px; background: rgba(255,107,120,.1); color: #ffb3ba; margin-bottom: 14px; font-size: 13.5px; }
+
+/* ---------- клавиатура ---------- */
+.kbd-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 16px; overflow-x: auto; }
+.kbd { display: flex; gap: 18px; min-width: 860px; }
+.kmain { display: flex; flex-direction: column; gap: 5px; flex: 15; }
+.knav { display: flex; flex-direction: column; gap: 5px; flex: 3; }
+.kmouse { display: flex; flex-direction: column; gap: 5px; flex: 2.4; }
+.krow { display: flex; gap: 5px; }
+.krow.gap { margin-bottom: 8px; }
+.key { position: relative; flex: var(--w, 1) 1 0; min-width: 0; height: 40px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); border-bottom-width: 3px; color: var(--dim); font-size: 11.5px; display: flex; align-items: center; justify-content: center; cursor: default; padding: 0 3px; overflow: hidden; white-space: nowrap; transition: background .12s, color .12s, border-color .12s; }
+.key.sp { visibility: hidden; }
+.key.b { background: rgba(240,166,58,.15); border-color: rgba(240,166,58,.55); color: var(--accent-2); cursor: pointer; font-weight: 600; }
+.key.b:hover, .key.hl { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.key.u { color: var(--danger); border-color: rgba(255,107,120,.4); cursor: pointer; text-decoration: line-through; }
+.mlabel { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+.tip { position: fixed; z-index: 60; max-width: 380px; padding: 8px 11px; border-radius: 8px; background: #000; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12.5px; pointer-events: none; display: none; }
+.tip b { color: var(--accent-2); font-family: var(--mono); }
+.tip code { font-family: var(--mono); word-break: break-word; }
+
+/* ---------- таблицы ---------- */
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.tbl th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); background: var(--card); padding: 9px 14px; position: sticky; top: 0; }
+.tbl td { padding: 8px 14px; border-top: 1px solid var(--line); vertical-align: top; word-break: break-word; }
+.tbl td.k { font-family: var(--mono); color: var(--accent-2); width: 34%; }
+.tbl td.v { font-family: var(--mono); }
+.tbl tr.hl td { background: rgba(240,166,58,.1); }
+.tbl td.empty { color: var(--dim); text-align: center; padding: 24px; font-family: var(--font); }
+.unb { color: var(--danger); }
+
+/* ---------- обзор ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.stat .lbl { color: var(--muted); font-size: 12.5px; }
+.stat .val { font: 600 26px var(--head); margin-top: 2px; }
+.stat .val.off { color: var(--dim); font-size: 16px; padding: 7px 0 3px; }
+.kv { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 16px; }
+.kv div { display: grid; grid-template-columns: 180px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.kv div:first-child { border-top: 0; }
+.kv span:first-child { color: var(--muted); }
+.kv span:last-child { word-break: break-all; }
+.kv a { color: var(--accent-2); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- сравнение ---------- */
+.sec { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.sec h3 { margin: 0; padding: 10px 16px; font: 600 14px var(--head); background: var(--card); display: flex; gap: 10px; align-items: center; }
+.sec h3 .n { margin-left: auto; color: var(--muted); font: 12.5px var(--font); }
+.drow { display: grid; grid-template-columns: 22px minmax(140px, 30%) 1fr; gap: 10px; padding: 6px 16px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 13px; word-break: break-word; }
+.drow .op { font-weight: 700; text-align: center; }
+.drow.add .op { color: var(--ok); } .drow.del .op { color: var(--danger); } .drow.chg .op { color: var(--warn); }
+.drow .old { color: var(--danger); text-decoration: line-through; opacity: .8; }
+.drow .new { color: var(--ok); }
+.sec .none { padding: 10px 16px; color: var(--dim); border-top: 1px solid var(--line); }
+
+/* ---------- autoexec ---------- */
+textarea.code { width: 100%; min-height: 380px; resize: vertical; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; font: 13px/1.6 var(--mono); tab-size: 4; }
+.check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.check.off { opacity: .45; cursor: not-allowed; }
+
+/* ---------- сборка .cfg ---------- */
+.builder { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+.seg { display: inline-flex; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.seg button { background: none; border: 0; padding: 5px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+.seg button.on { background: var(--card); color: var(--fg); box-shadow: 0 1px 0 rgba(255,255,255,.04); }
+.blist { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); max-height: calc(100vh - 330px); min-height: 240px; overflow-y: auto; }
+.brow { display: grid; grid-template-columns: 22px minmax(90px, 32%) 1fr; gap: 10px; align-items: start; padding: 7px 14px; border-top: 1px solid var(--line); cursor: pointer; font-family: var(--mono); font-size: 13px; word-break: break-word; }
+.brow:first-child { border-top: 0; }
+.brow:hover { background: var(--card); }
+.brow input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.brow .k { color: var(--accent-2); }
+.brow.on { background: rgba(240,166,58,.07); }
+.cart { position: sticky; top: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.cart h3 { margin: 0; font: 600 15px var(--head); display: flex; align-items: center; gap: 8px; }
+.cart h3 .n { margin-left: auto; font: 12.5px var(--font); color: var(--muted); }
+.namebox { display: flex; align-items: stretch; background: var(--field); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.namebox input { flex: 1; min-width: 0; background: none; border: 0; padding: 8px 11px; font-family: var(--mono); }
+.namebox input:focus { outline: none; }
+.namebox:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.namebox span { padding: 8px 11px; color: var(--dim); font-family: var(--mono); background: var(--card); }
+.citems { max-height: 230px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.cgrp { font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 7px 10px 3px; background: var(--card); position: sticky; top: 0; }
+.citem { display: grid; grid-template-columns: minmax(70px, 38%) 1fr 26px; gap: 8px; align-items: center; padding: 4px 4px 4px 10px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; }
+.citem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.citem .k { color: var(--accent-2); }
+.citem button { background: none; border: 0; color: var(--dim); cursor: pointer; border-radius: 5px; height: 24px; font-size: 16px; line-height: 1; }
+.citem button:hover { color: var(--danger); background: rgba(255,107,120,.12); }
+.cempty { color: var(--dim); text-align: center; padding: 18px 10px; font-size: 13px; }
+textarea.extra { width: 100%; min-height: 70px; resize: vertical; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; font: 12.5px/1.5 var(--mono); }
+details.prev summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+details.prev pre { margin: 8px 0 0; max-height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.howto { background: var(--card); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+.howto code { font-family: var(--mono); color: var(--accent-2); background: var(--bg); padding: 1px 6px; border-radius: 5px; }
+.cbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.cbtns .btn.primary { flex: 1; }
+@media (max-width: 1100px) { .builder { grid-template-columns: 1fr; } .cart { position: static; } .blist { max-height: 420px; } }
+
+/* ---------- модальные окна ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(5,6,9,.65); display: grid; place-items: center; z-index: 50; padding: 16px; animation: fade .15s ease-out; }
+.modal { width: min(500px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 20px 22px; animation: pop .18s ease-out; }
+.modal h3 { margin: 0 0 6px; font: 600 18px var(--head); }
+.modal p { color: var(--muted); margin: 0 0 14px; }
+.modal .warnbox { background: rgba(240,192,58,.1); color: #f5d98a; padding: 9px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field label { font-size: 13px; color: var(--muted); }
+.field input[type=text], .field select { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; }
+.field .err { color: var(--danger); font-size: 12.5px; min-height: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; margin-bottom: 12px; }
+.opts .hint { color: var(--dim); font-size: 12px; margin-left: 23px; margin-top: -5px; }
+.mfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+
+/* ---------- уведомления ---------- */
+.toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 70; max-width: min(420px, calc(100vw - 36px)); }
+.toast { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--ok); box-shadow: var(--shadow); animation: pop .2s ease-out; font-size: 13.5px; overflow-wrap: anywhere; min-width: 0; }
+.toast.err { border-left-color: var(--danger); } .toast.warn { border-left-color: var(--warn); }
+
+.menu { position: absolute; right: 0; top: calc(100% + 6px); background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 6px; min-width: 230px; z-index: 40; display: none; }
+.menu.open { display: block; }
+.menu button { display: flex; align-items: center; gap: 9px; width: 100%; background: none; border: 0; padding: 8px 10px; border-radius: 7px; cursor: pointer; text-align: left; }
+.menu button:hover { background: var(--hover); }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 0; }
+.rel { position: relative; }
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; }
+  .body { grid-template-columns: 1fr; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); max-height: 45vh; }
+  header { flex-wrap: wrap; }
+  .select select { min-width: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 24 24"><path d="M12 3v18M5 8h4M7 6v4M15 16h4"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h13l-4-4M17 17H4l4 4"/></symbol>
+  <symbol id="i-kbd" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-gamepad" viewBox="0 0 24 24"><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/><rect x="2" y="6" width="20" height="12" rx="6"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></symbol>
+</svg>
+
+<div class="app">
+  <header>
+    <div class="logo"><div class="mark"><svg class="i"><use href="#i-gamepad"/></svg></div>CS2 <b>Config</b> Saver</div>
+    <span class="chip" id="st-game" title="Состояние CS2"><span class="dot"></span>CS2</span>
+    <span class="chip" id="st-steam" title="Состояние Steam"><span class="dot"></span>Steam</span>
+    <label class="select" title="Аккаунт Steam"><select id="acc" aria-label="Аккаунт Steam"></select></label>
+    <button class="btn icon" id="b-refresh" title="Обновить (F5)" aria-label="Обновить"><svg class="i"><use href="#i-refresh"/></svg></button>
+    <div class="rel">
+      <button class="btn icon" id="b-menu" aria-label="Меню" aria-haspopup="true"><svg class="i"><use href="#i-more"/></svg></button>
+      <div class="menu" id="menu" role="menu">
+        <button data-open="user"><svg class="i"><use href="#i-folder"/></svg>Папка конфигов аккаунта</button>
+        <button data-open="game"><svg class="i"><use href="#i-folder"/></svg>Папка игры (cfg)</button>
+        <button data-open="data"><svg class="i"><use href="#i-folder"/></svg>Папка профилей и бэкапов</button>
+        <hr>
+        <button id="m-steam"><svg class="i"><use href="#i-edit"/></svg>Указать папку Steam…</button>
+        <hr>
+        <button id="m-quit"><svg class="i"><use href="#i-power"/></svg>Выйти из программы</button>
+      </div>
+    </div>
+  </header>
+  <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span></span></div>
+  <div class="body">
+    <aside>
+      <div class="side-head">
+        <div class="row"><h2 style="flex:1">Профили</h2>
+          <button class="btn primary sm" id="b-save" title="Сохранить текущий конфиг (Ctrl+S)"><svg class="i"><use href="#i-save"/></svg>Сохранить</button></div>
+        <div class="search"><svg class="i"><use href="#i-search"/></svg><input id="psearch" placeholder="Поиск профиля" aria-label="Поиск профиля"></div>
+      </div>
+      <div class="plist" id="plist"></div>
+      <div class="side-foot">
+        <button class="btn sm" id="b-import"><svg class="i"><use href="#i-up"/></svg>Импорт ZIP</button>
+        <input type="file" id="file" accept=".zip" hidden>
+      </div>
+    </aside>
+    <main>
+      <div class="mhead">
+        <div class="title"><h1 id="m-title"></h1><div class="sub" id="m-sub"></div></div>
+        <div class="actions" id="m-actions"></div>
+      </div>
+      <nav class="tabs" id="tabs" role="tablist"></nav>
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+"use strict";
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const icon = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const PART = {binds: "Бинды", settings: "Настройки", video: "Видео", game: "autoexec"};
+
+let S = {accounts: [], profiles: []};   // ответ /api/state
+let accId = null, sel = null;           // выбранный аккаунт и профиль (null = текущий конфиг)
+let src = {binds: {}, convars: {}, machine: {}, video: {}, errors: [], files: []};
+let tab = "overview", filter = "", hlKey = null, autosOpen = false, cmp = null;
+let autoText = null;
+
+async function api(path, data = {}) {
+  const r = await fetch("/api/" + path, {method: "POST", headers: {"Content-Type": "application/json", "X-Token": TOKEN}, body: JSON.stringify(data)});
+  let j = {};
+  try { j = await r.json(); } catch { if (r.status === 403) throw new Error("Сессия устарела. Закройте окно и запустите программу заново."); }
+  if (!r.ok) throw new Error(j.error || `Ошибка ${r.status}`);
+  return j;
+}
+
+function toast(msg, kind = "ok", ms = 4500) {
+  const el = document.createElement("div");
+  el.className = "toast " + (kind === "ok" ? "" : kind);
+  el.innerHTML = icon(kind === "ok" ? "check" : kind === "err" ? "alert" : "info") + `<div>${esc(msg)}</div>`;
+  $("#toasts").append(el);
+  setTimeout(() => el.remove(), kind === "err" ? Math.max(ms, 8000) : ms);
+}
+const fail = e => toast(e.message || String(e), "err");
+
+/* ------------------------------------------------------------ модальные окна */
+function modal({title, text = "", html = "", ok = "ОК", danger = false, cancel = "Отмена", onOk}) {
+  return new Promise(resolve => {
+    const prev = document.activeElement;
+    const ov = document.createElement("div");
+    ov.className = "overlay";
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">${esc(title)}</h3>
+      ${text ? `<p>${esc(text)}</p>` : ""}${html}<div class="field"><div class="err" id="m-err"></div></div>
+      <div class="mfoot">${cancel ? `<button class="btn" data-x>${esc(cancel)}</button>` : ""}
+      <button class="btn ${danger ? "danger" : "primary"}" data-ok>${esc(ok)}</button></div></div>`;
+    document.body.append(ov);
+    const m = $(".modal", ov), okb = $("[data-ok]", ov);
+    const close = v => { ov.remove(); prev?.focus?.(); resolve(v); };
+    const submit = async () => {
+      if (!onOk) return close(true);
+      okb.disabled = true; $("#m-err", ov).textContent = "";
+      try { const v = await onOk(m); if (v !== undefined) close(v); }
+      catch (e) { $("#m-err", ov).textContent = e.message; }
+      finally { okb.disabled = false; }
+    };
+    okb.onclick = submit;
+    $("[data-x]", ov)?.addEventListener("click", () => close(null));
+    ov.addEventListener("mousedown", e => { if (e.target === ov) close(null); });
+    ov.addEventListener("keydown", e => {
+      if (e.key === "Escape") close(null);
+      if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "text") { e.preventDefault(); submit(); }
+      if (e.key === "Tab") {  // фокус не уходит за пределы окна
+        const f = [...m.querySelectorAll("button, input, select, textarea")].filter(x => !x.disabled);
+        if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+        else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+      }
+    });
+    (m.querySelector("input[type=text]") || okb).focus();
+    m.querySelector("input[type=text]")?.select();
+  });
+}
+const confirmBox = (title, text, ok = "Да", danger = false) => modal({title, text, ok, danger});
+const chk = (id, label, on, disabled = false, hint = "") =>
+  `<label class="check ${disabled ? "off" : ""}"><input type="checkbox" id="${id}" ${on && !disabled ? "checked" : ""} ${disabled ? "disabled" : ""}>${esc(label)}</label>${hint ? `<div class="hint">${esc(hint)}</div>` : ""}`;
+
+/* ------------------------------------------------------------ данные */
+const account = () => S.accounts.find(a => a.id === accId) || null;
+const profile = () => S.profiles.find(p => p.name === sel) || null;
+
+async function loadState(refresh = false) {
+  S = await api("state", {refresh});
+  if (!S.accounts.some(a => a.id === accId)) accId = S.accounts.some(a => a.id === S.selected) ? S.selected : (S.accounts[0]?.id ?? null);
+  if (sel && !profile()) sel = null;
+  renderHeader(); renderStatus(S); renderProfiles();
+  if (S.skipped) toast(`Пропущено повреждённых профилей: ${S.skipped}. Их папки лежат в ${S.data_dir}.`, "warn", 9000);
+  await loadSource();
+}
+
+async function loadSource() {
+  src = {binds: {}, convars: {}, machine: {}, video: {}, errors: [], files: []};
+  cmp = null;
+  try {
+    if (sel) src = await api("source", {profile: sel});
+    else if (accId) src = await api("source", {account_id: accId});
+  } catch (e) { src.errors = [e.message]; }
+  renderMain();
+}
+
+/* ------------------------------------------------------------ шапка и статус */
+function renderHeader() {
+  const s = $("#acc");
+  s.innerHTML = S.accounts.length ? S.accounts.map(a => `<option value="${esc(a.id)}">${esc(a.label)}${a.has_cs2 ? "" : " — без CS2"}</option>`).join("")
+                                  : `<option>Аккаунты не найдены</option>`;
+  s.disabled = !S.accounts.length;
+  if (accId) s.value = accId;
+}
+
+function renderStatus(st) {
+  const set = (el, v, name, okText) => {
+    const d = $(el + " .dot");
+    d.className = "dot " + (v === null ? "warn" : v ? (name === "CS2" ? "bad" : "warn") : "ok");
+    $(el).lastChild.textContent = v === null ? `${name}: не проверить` : v ? `${name} запущен${name === "CS2" ? "а" : ""}` : okText;
+  };
+  set("#st-game", st.game, "CS2", "CS2 закрыта");
+  set("#st-steam", st.steam, "Steam", "Steam закрыт");
+  const b = $("#banner"), [kind, text] = st.banner || ["", ""];
+  b.className = "banner" + (text ? " show " + kind : "");
+  $("span", b).textContent = text;
+}
+
+/* ------------------------------------------------------------ список профилей */
+function pitem(p) {
+  const tags = p.parts.map(x => `<span class="tag ${x === "binds" ? "binds" : ""}">${PART[x]}</span>`).join("")
+             + (p.imported ? `<span class="tag imp">импорт</span>` : "");
+  const meta = [p.created.slice(0, 16), p.account_label].filter(Boolean).join(" · ");
+  return `<button class="pitem ${sel === p.name ? "sel" : ""}" data-p="${esc(p.name)}">
+    <div class="t">${p.auto ? icon("restore") : ""}<span>${esc(p.name)}</span></div>
+    <div class="m">${esc(meta)}${p.note ? " · " + esc(p.note) : ""}</div><div class="tags">${tags}</div></button>`;
+}
+
+function renderProfiles() {
+  const q = $("#psearch").value.trim().toLowerCase();
+  const match = p => !q || p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
+  const own = S.profiles.filter(p => !p.auto && match(p)), autos = S.profiles.filter(p => p.auto && match(p));
+  const acc = account();
+  let h = `<button class="pitem ${sel === null ? "sel" : ""}" data-p="">
+    <div class="t">${icon("monitor")}<span>Текущий конфиг в игре</span></div>
+    <div class="m">${esc(acc ? acc.label : "аккаунт не выбран")}</div></button>`;
+  h += own.length ? own.map(pitem).join("") : `<div class="empty-list">${q ? "Ничего не найдено" : "Профилей пока нет.<br>Нажмите «Сохранить», чтобы сделать первую копию."}</div>`;
+  if (autos.length) {
+    const open = autosOpen || !!q || autos.some(p => p.name === sel);
+    h += `<button class="group-btn ${open ? "open" : ""}" id="g-auto">${icon("chev")}Автобэкапы (${autos.length})</button>`;
+    if (open) h += autos.map(pitem).join("");
+  }
+  $("#plist").innerHTML = h;
+}
+
+/* ------------------------------------------------------------ основная часть */
+const TABS = [["overview", "Обзор", "info"], ["binds", "Бинды", "kbd"], ["settings", "Настройки", "sliders"],
+              ["compare", "Сравнение", "diff"], ["builder", "Сборка .cfg", "layers"], ["autoexec", "autoexec.cfg", "file"]];
+
+function renderMain() {
+  const p = profile(), acc = account();
+  $("#b-save").disabled = !acc?.has_cs2;
+  $("#m-title").innerHTML = p ? `${p.auto ? icon("restore") : ""}${esc(p.name)}` : "Текущий конфиг";
+  $("#m-sub").textContent = p ? [`Создан ${p.created}`, p.account_label && `с аккаунта ${p.account_label}`, p.note].filter(Boolean).join(" · ")
+                              : acc ? `Аккаунт ${acc.label}. Так конфиг выглядит в игре прямо сейчас.` : "Выберите аккаунт Steam сверху.";
+  const A = [];
+  if (p) {
+    A.push(`<button class="btn primary" data-a="restore">${icon("restore")}Восстановить</button>`,
+           `<button class="btn" data-a="rename">${icon("edit")}Переименовать</button>`,
+           `<button class="btn" data-a="export">${icon("down")}Экспорт</button>`,
+           `<button class="btn danger" data-a="delete">${icon("trash")}Удалить</button>`);
+  } else if (acc) {
+    if (acc.has_cs2) A.push(`<button class="btn primary" data-a="save">${icon("save")}Сохранить профиль</button>`);
+    if (S.accounts.length > 1) A.push(`<button class="btn" data-a="transfer">${icon("swap")}Перенести на другой аккаунт</button>`);
+  }
+  $("#m-actions").innerHTML = A.join("");
+  if (!p && tab === "compare") tab = "overview";
+  const n = {binds: Object.keys(src.binds).length, settings: Object.keys(src.convars).length + Object.keys(src.machine).length,
+             builder: Object.keys(cart.items).length || undefined};
+  $("#tabs").innerHTML = TABS.filter(([k]) => k !== "compare" || p).map(([k, t, ic]) =>
+    `<button class="tab ${tab === k ? "on" : ""}" data-tab="${k}" role="tab" aria-selected="${tab === k}">${icon(ic)}${t}${n[k] !== undefined ? `<span class="n">${n[k]}</span>` : ""}</button>`).join("");
+  renderTab();
+}
+
+function errorsHtml() {
+  return src.errors.map(e => `<div class="alert">${icon("alert")}<div>${esc(e)}</div></div>`).join("");
+}
+
+function renderTab() {
+  const c = $("#content");
+  hideTip();
+  if (tab === "overview") c.innerHTML = overviewHtml();
+  else if (tab === "binds") c.innerHTML = bindsHtml();
+  else if (tab === "settings") c.innerHTML = settingsHtml();
+  else if (tab === "compare") { c.innerHTML = compareHtml(); if (!cmp) loadCompare(); }
+  else if (tab === "builder") { c.innerHTML = builderHtml(); renderCart(); }
+  else if (tab === "autoexec") { c.innerHTML = autoexecHtml(); $("#ae-text").value = autoText ?? ""; if (autoText === null) loadAutoexec(); }
+}
+
+function overviewHtml() {
+  const p = profile(), acc = account();
+  const nb = Object.keys(src.binds).length, nc = Object.keys(src.convars).length, nm = Object.keys(src.machine).length, nv = Object.keys(src.video).length;
+  const stat = (lbl, n, has) => `<div class="stat"><div class="lbl">${lbl}</div><div class="val ${has ? "" : "off"}">${has ? n : "нет файла"}</div></div>`;
+  const has = fn => src.files.includes(fn);
+  let h = errorsHtml();
+  if (!p && acc && !acc.has_cs2) h += `<div class="alert" style="background:rgba(106,167,255,.08);color:#b7d2ff">${icon("info")}<div>
+    На этом аккаунте CS2 на этом ПК ещё не запускалась, поэтому сохранять пока нечего.
+    Зато сюда можно перенести бинды и настройки: выберите профиль слева и нажмите «Восстановить» или откройте другой аккаунт и нажмите «Перенести на другой аккаунт».
+    Видео применится только после первого запуска игры.</div></div>`;
+  h += `<div class="cards">${stat("Бинды", nb, has("cs2_user_keys_0_slot0.vcfg"))}${stat("Настройки", nc, has("cs2_user_convars_0_slot0.vcfg"))}
+    ${stat("Системные настройки", nm, has("cs2_machine_convars.vcfg"))}${stat("Видео", nv, has("cs2_video.txt"))}</div>`;
+  const rows = [];
+  if (p) {
+    rows.push(["Файлы профиля", p.files.map(esc).join("<br>")]);
+    if (p.imported) rows.push(["Происхождение", "Импортирован из ZIP: проверьте файлы для папки игры перед восстановлением."]);
+    rows.push(["Где лежит", `<a data-open="profile">Открыть папку профиля</a>`]);
+  } else if (acc) {
+    rows.push(["Папка конфигов", `<a data-open="user">Открыть</a>`]);
+  }
+  rows.push(["Папка игры", S.game_cfg ? `${esc(S.game_cfg)} · <a data-open="game">открыть</a>` : "не найдена (autoexec недоступен)"]);
+  rows.push(["Steam", esc(S.steam_path || "не найден")]);
+  rows.push(["Профили и бэкапы", `${esc(S.data_dir)} · <a data-open="data">открыть</a>`]);
+  h += `<div class="kv">${rows.map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join("")}</div>`;
+  if (!p) h += `<p class="note" style="margin-top:14px">Совет: «Сохранить профиль» умеет брать только бинды. Такой профиль можно потом применить к любому аккаунту, не трогая его настройки и видео.</p>`;
+  return h;
+}
+
+/* ---------- клавиатура ---------- */
+const K = (label, key, w = 1) => ({label, key: key ?? label.toLowerCase(), w});
+const SP = w => ({sp: true, w});
+const KB_MAIN = [
+  [K("Esc", "escape"), SP(.6), ...["F1","F2","F3","F4"].map(f => K(f, f)), SP(.4), ...["F5","F6","F7","F8"].map(f => K(f, f)), SP(.4), ...["F9","F10","F11","F12"].map(f => K(f, f))],
+  [K("`"), ..."1234567890".split("").map(d => K(d)), K("-"), K("="), K("Backspace", "backspace", 2)],
+  [K("Tab", "tab", 1.5), ..."qwertyuiop".split("").map(l => K(l.toUpperCase(), l)), K("["), K("]"), K("\\", "\\", 1.5)],
+  [K("Caps", "capslock", 1.8), ..."asdfghjkl".split("").map(l => K(l.toUpperCase(), l)), K(";", "semicolon"), K("'"), K("Enter", "enter", 2.2)],
+  [K("Shift", "shift", 2.3), ..."zxcvbnm".split("").map(l => K(l.toUpperCase(), l)), K(","), K("."), K("/"), K("Shift", "rshift", 2.7)],
+  [K("Ctrl", "ctrl", 1.5), K("Win", "lwin", 1.2), K("Alt", "alt", 1.2), K("Space", "space", 6.6), K("Alt", "ralt", 1.2), K("Win", "rwin", 1.2), K("Ctrl", "rctrl", 1.5)],
+];
+const KB_NAV = [
+  [K("PrtSc", "printscreen"), K("ScrLk", "scrolllock"), K("Pause", "pause")],
+  [K("Ins", "ins"), K("Home", "home"), K("PgUp", "pgup")],
+  [K("Del", "del"), K("End", "end"), K("PgDn", "pgdn")],
+  [SP(1), SP(1), SP(1)],
+  [SP(1), K("↑", "uparrow"), SP(1)],
+  [K("←", "leftarrow"), K("↓", "downarrow"), K("→", "rightarrow")],
+];
+const KB_MOUSE = [[K("ЛКМ", "mouse1"), K("ПКМ", "mouse2")], [K("Колесо", "mouse3", 2)], [K("Колесо ↑", "mwheelup", 2)],
+                  [K("Колесо ↓", "mwheeldown", 2)], [K("M4", "mouse4"), K("M5", "mouse5")]];
+
+function bindMap() { const m = {}; for (const [k, v] of Object.entries(src.binds)) m[k.toLowerCase()] = [k, v]; return m; }
+
+function keyHtml(k, bm) {
+  if (k.sp) return `<div class="key sp" style="--w:${k.w}"></div>`;
+  const b = bm[k.key];
+  const unb = b && b[1].trim().toLowerCase() === "<unbound>";
+  const cls = b ? (unb ? "u" : "b") : "";
+  return `<div class="key ${cls} ${hlKey === k.key ? "hl" : ""}" style="--w:${k.w}" ${b ? `data-k="${esc(k.key)}" tabindex="0" aria-label="${esc(k.label)}: ${esc(b[1])}"` : ""}>${esc(k.label)}</div>`;
+}
+
+function bindsHtml() {
+  const bm = bindMap(), q = filter.trim().toLowerCase();
+  const rows = Object.entries(src.binds).sort((a, b) => a[0].localeCompare(b[0], "ru", {numeric: true}))
+    .filter(([k, v]) => !q || k.toLowerCase().includes(q) || v.toLowerCase().includes(q));
+  const kb = `<div class="kbd-wrap"><div class="kbd">
+    <div class="kmain">${KB_MAIN.map((r, i) => `<div class="krow ${i === 0 ? "gap" : ""}">${r.map(k => keyHtml(k, bm)).join("")}</div>`).join("")}</div>
+    <div class="knav">${KB_NAV.map((r, i) => `<div class="krow ${i === 0 ? "gap" : ""}">${r.map(k => keyHtml(k, bm)).join("")}</div>`).join("")}</div>
+    <div class="kmouse"><div class="mlabel">Мышь</div>${KB_MOUSE.map(r => `<div class="krow">${r.map(k => keyHtml(k, bm)).join("")}</div>`).join("")}</div>
+  </div></div>`;
+  const p = profile();
+  const acts = [];
+  if (p && p.parts.includes("binds")) acts.push(`<button class="btn sm primary" data-a="restore-binds">${icon("restore")}Применить только бинды</button>`);
+  if (!p && account()?.has_cs2) acts.push(`<button class="btn sm" data-a="save-binds">${icon("save")}Сохранить только бинды</button>`);
+  if (!p && S.accounts.length > 1) acts.push(`<button class="btn sm" data-a="transfer-binds">${icon("swap")}Перенести бинды на другой аккаунт</button>`);
+  if (rows.length || Object.keys(src.binds).length) acts.push(`<button class="btn sm" data-a="binds-cfg">${icon("down")}Скачать как .cfg</button>`);
+  return errorsHtml() + `<div class="toolbar">${acts.join("")}<div class="grow"></div>
+      <div class="search" style="max-width:260px"><svg class="i"><use href="#i-search"/></svg><input id="flt" placeholder="Клавиша или команда" value="${esc(filter)}" aria-label="Фильтр биндов"></div></div>
+    ${kb}
+    <p class="note" style="margin:-6px 0 12px">Подсвечены клавиши из файла биндов. Красные зачёркнутые явно отвязаны. Клавиш, которых нет в файле, CS2 оставляет по умолчанию. Клавиши вне схемы (цифровой блок и т. п.) есть в таблице.</p>
+    <table class="tbl"><thead><tr><th>Клавиша</th><th>Команда</th></tr></thead><tbody>
+    ${rows.length ? rows.map(([k, v]) => `<tr data-row="${esc(k.toLowerCase())}" class="${hlKey === k.toLowerCase() ? "hl" : ""}"><td class="k">${esc(k)}</td><td class="v ${v.trim().toLowerCase() === "<unbound>" ? "unb" : ""}">${esc(v)}</td></tr>`).join("")
+      : `<tr><td colspan="2" class="empty">${q ? "Ничего не найдено" : "Биндов в файле нет"}</td></tr>`}
+    </tbody></table>`;
+}
+
+function settingsHtml() {
+  const q = filter.trim().toLowerCase();
+  const all = [...Object.entries(src.convars).map(([k, v]) => [k, v, "игрок"]), ...Object.entries(src.machine).filter(([k]) => !(k in src.convars)).map(([k, v]) => [k, v, "система"])]
+    .sort((a, b) => a[0].localeCompare(b[0])).filter(([k, v]) => !q || k.toLowerCase().includes(q) || v.toLowerCase().includes(q));
+  const p = profile(), acts = [];
+  if (p && p.parts.includes("settings")) acts.push(`<button class="btn sm primary" data-a="restore-settings">${icon("restore")}Применить только настройки</button>`);
+  return errorsHtml() + `<div class="toolbar">${acts.join("")}<span class="note">${all.length} шт.</span><div class="grow"></div>
+      <div class="search" style="max-width:260px"><svg class="i"><use href="#i-search"/></svg><input id="flt" placeholder="Команда или значение" value="${esc(filter)}" aria-label="Фильтр настроек"></div></div>
+    <table class="tbl"><thead><tr><th>Команда</th><th>Значение</th><th style="width:110px">Файл</th></tr></thead><tbody>
+    ${all.length ? all.map(([k, v, f]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td><td class="note">${f}</td></tr>`).join("")
+      : `<tr><td colspan="3" class="empty">${q ? "Ничего не найдено" : "Настроек нет"}</td></tr>`}</tbody></table>`;
+}
+
+function compareHtml() {
+  if (!cmp) return `<p class="note">Сравниваю…</p>`;
+  if (cmp.error) return `<div class="alert">${icon("alert")}<div>${esc(cmp.error)}</div></div>`;
+  return `<p class="note" style="margin-top:0">Что изменится в аккаунте <b>${esc(account()?.label || "")}</b>, если восстановить профиль.
+      <span style="color:var(--ok)">+</span> добавится, <span style="color:var(--danger)">−</span> пропадёт, <span style="color:var(--warn)">~</span> изменится.</p>` +
+    cmp.sections.map(s => {
+      let body;
+      if (s.missing) body = `<div class="none">В профиле нет этого файла, при восстановлении он не изменится.</div>`;
+      else if (s.error) body = `<div class="none" style="color:var(--danger)">${esc(s.error)}</div>`;
+      else if (!s.diff.length) body = `<div class="none">Без отличий.</div>`;
+      else body = s.diff.map(d => `<div class="drow ${d.op === "+" ? "add" : d.op === "-" ? "del" : "chg"}"><span class="op">${d.op === "-" ? "−" : d.op}</span>
+          <span>${esc(d.key)}</span><span>${d.op === "~" ? `<span class="old">${esc(d.old)}</span> → <span class="new">${esc(d.new)}</span>`
+          : d.op === "+" ? `<span class="new">${esc(d.new)}</span>` : `<span class="old">${esc(d.old)}</span>`}</span></div>`).join("");
+      return `<div class="sec"><h3>${esc(s.title)}<span class="n">${s.missing ? "нет в профиле" : s.error ? "ошибка" : `различий: ${s.diff.length}`}</span></h3>${body}</div>`;
+    }).join("");
+}
+
+async function loadCompare() {
+  try { cmp = await api("compare", {name: sel, account_id: accId}); }
+  catch (e) { cmp = {error: e.message}; }
+  if (tab === "compare") renderTab();
+}
+
+/* ---------- сборка своего .cfg ----------
+   Выбор копится в «корзине» и не сбрасывается при смене аккаунта или профиля:
+   можно взять бинды с одного аккаунта, а команды с другого. */
+let bsub = "binds", bq = "", bItems = [], prevTimer = 0;
+const cart = (() => {
+  try { const c = JSON.parse(localStorage.getItem("cs2cfg.cart") || "null"); if (c && typeof c.items === "object") return c; } catch {}
+  return {name: "mybinds", extra: "", items: {}};
+})();
+const saveCart = () => { try { localStorage.setItem("cs2cfg.cart", JSON.stringify(cart)); } catch {} };
+const cartId = (t, k) => t + ":" + k.toLowerCase();
+const srcName = () => profile() ? `профиль «${profile().name}»` : (account()?.label || "");
+
+function builderHtml() {
+  const t = bsub === "binds" ? "b" : "c";
+  const all = bsub === "binds" ? Object.entries(src.binds)
+            : [...Object.entries(src.convars), ...Object.entries(src.machine).filter(([k]) => !(k in src.convars))];
+  const q = bq.trim().toLowerCase();
+  bItems = all.sort((a, b) => a[0].localeCompare(b[0], "ru", {numeric: true}))
+              .filter(([k, v]) => !q || k.toLowerCase().includes(q) || v.toLowerCase().includes(q)).map(([k, v]) => ({t, k, v}));
+  const rows = bItems.map((it, i) => {
+    const on = cart.items[cartId(t, it.k)]?.v === it.v;  // та же клавиша с другой командой: клик заменит
+    return `<label class="brow ${on ? "on" : ""}"><input type="checkbox" data-i="${i}" ${on ? "checked" : ""}>
+      <span class="k">${esc(it.k)}</span><span class="${it.v.trim().toLowerCase() === "<unbound>" ? "unb" : ""}">${esc(it.v)}</span></label>`;
+  }).join("");
+  return errorsHtml() + `<div class="builder"><div>
+    <div class="toolbar">
+      <div class="seg" role="tablist"><button class="${bsub === "binds" ? "on" : ""}" data-bsub="binds">Бинды</button><button class="${bsub === "settings" ? "on" : ""}" data-bsub="settings">Настройки</button></div>
+      <button class="btn sm" data-a="b-all">Отметить все</button><button class="btn sm ghost" data-a="b-none">Снять</button>
+      <div class="grow"></div>
+      <div class="search" style="max-width:230px;min-width:150px"><svg class="i"><use href="#i-search"/></svg><input id="bq" placeholder="Поиск" value="${esc(bq)}" aria-label="Поиск команд"></div>
+    </div>
+    <p class="note" style="margin:-4px 0 10px">Источник: <b>${esc(srcName())}</b>. Выбор сохраняется при смене аккаунта или профиля, так что можно собрать файл из нескольких.</p>
+    <div class="blist" id="blist">${rows || `<div class="cempty">${q ? "Ничего не найдено" : "Здесь пусто: выберите другой источник слева или сверху"}</div>`}</div>
+  </div><div class="cart" id="cart"></div></div>`;
+}
+
+function renderCart() {
+  const box = $("#cart");
+  if (!box) return;
+  const ids = Object.keys(cart.items), binds = ids.filter(i => i[0] === "b"), conv = ids.filter(i => i[0] === "c");
+  const item = id => { const it = cart.items[id]; return `<div class="citem" title="${esc(it.k)} ${esc(it.v)}\nиз: ${esc(it.from)}"><span class="k">${esc(it.k)}</span><span>${esc(it.v)}</span><button data-rm="${esc(id)}" aria-label="Убрать ${esc(it.k)}">×</button></div>`; };
+  const sort = arr => arr.sort((a, b) => cart.items[a].k.localeCompare(cart.items[b].k, "ru", {numeric: true}));
+  const base = (cart.name || "mybinds").replace(/\.cfg$/i, "");
+  box.innerHTML = `<h3>${icon("layers")}Ваш .cfg<span class="n">${ids.length ? `${binds.length} биндов, ${conv.length} команд` : "пусто"}</span></h3>
+    <div class="field" style="margin:0"><label for="cf-name">Имя файла</label><div class="namebox"><input id="cf-name" value="${esc(base)}" maxlength="40" spellcheck="false"><span>.cfg</span></div><div class="err" id="cf-err"></div></div>
+    <div class="citems">${ids.length ? (binds.length ? `<div class="cgrp">Бинды</div>${sort(binds).map(item).join("")}` : "") + (conv.length ? `<div class="cgrp">Команды и настройки</div>${sort(conv).map(item).join("")}` : "")
+      : `<div class="cempty">Отметьте слева бинды и настройки,<br>которые должны попасть в файл.</div>`}</div>
+    <div class="field" style="margin:0"><label for="cf-extra">Свои команды (необязательно, по одной в строке)</label>
+      <textarea class="extra" id="cf-extra" spellcheck="false" placeholder="echo Бинды загружены">${esc(cart.extra)}</textarea></div>
+    <details class="prev"><summary>Предпросмотр файла</summary><pre id="cf-prev">…</pre></details>
+    <div class="howto">В игре откройте консоль и введите <code>exec ${esc(base)}</code>. Чтобы файл загружался сам при каждом запуске, добавьте в параметры запуска <code>+exec ${esc(base)}</code>.</div>
+    <div class="cbtns"><button class="btn primary" data-a="cf-write" ${S.game_cfg ? "" : "disabled title='Папка игры не найдена'"}>${icon("save")}Записать в игру</button>
+      <button class="btn" data-a="cf-download">${icon("down")}Скачать</button>
+      <button class="btn ghost danger" data-a="cf-clear" ${ids.length ? "" : "disabled"}>Очистить</button></div>`;
+  schedulePreview();
+}
+
+function cartPayload() {
+  const binds = {}, convars = {};
+  for (const it of Object.values(cart.items)) (it.t === "b" ? binds : convars)[it.k] = it.v;
+  return {name: (cart.name || "").trim(), binds, convars, extra: cart.extra};
+}
+
+function schedulePreview() {
+  clearTimeout(prevTimer);
+  prevTimer = setTimeout(async () => {
+    const pre = $("#cf-prev"), err = $("#cf-err");
+    if (!pre) return;
+    try { const r = await api("cfg_build", cartPayload()); pre.textContent = r.text || "Файл пуст: ничего не выбрано."; if (err) err.textContent = ""; }
+    catch (e) { pre.textContent = "—"; if (err) err.textContent = e.message; }
+  }, 150);
+}
+
+function toggleItem(i, on) {
+  const it = bItems[i];
+  if (!it) return;
+  const id = cartId(it.t, it.k);
+  if (on) cart.items[id] = {t: it.t, k: it.k, v: it.v, from: srcName()};
+  else delete cart.items[id];
+}
+
+function refreshBuilder() {  // перерисовка без потери прокрутки списка
+  const top = $("#blist")?.scrollTop || 0;
+  saveCart(); renderMain();
+  if ($("#blist")) $("#blist").scrollTop = top;
+}
+
+async function cfgWrite() {
+  const p = cartPayload();
+  try {
+    let r = await api("cfg_write", p);
+    if (r.confirm) {
+      if (!(await confirmBox("Заменить файл?", r.confirm, "Заменить"))) return;
+      r = await api("cfg_write", {...p, confirm: true});
+    }
+    toast(`Записано: ${r.path}${r.backup ? ` (старый: ${r.backup})` : ""}. В игре: exec ${r.exec}`, "ok", 9000);
+  } catch (e) { fail(e); }
+}
+
+async function cfgDownload() {
+  try {
+    const r = await api("cfg_build", cartPayload());
+    if (!r.text) return toast("Ничего не выбрано: отметьте бинды или команды.", "warn");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([r.text], {type: "text/plain"}));
+    a.download = r.file;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast(`${r.file} сохраняется в «Загрузки». Положите его в папку игры csgo/cfg.`);
+  } catch (e) { fail(e); }
+}
+
+function autoexecHtml() {
+  return `<div class="toolbar">
+      <span class="note">Собрать из «${esc(profile()?.name || "текущего конфига")}»:</span>
+      ${chk("ae-c", "Настройки", true)}${chk("ae-b", "Бинды", true)}
+      <button class="btn sm" data-a="ae-build">${icon("refresh")}Собрать</button>
+      <button class="btn sm" data-a="ae-load">${icon("file")}Открыть текущий autoexec.cfg</button>
+      <div class="grow"></div>
+      <button class="btn sm" data-a="ae-launch" title="${esc(S.launch_option)}">${icon("copy")}Параметр запуска</button>
+      <button class="btn sm primary" data-a="ae-write" ${S.game_cfg ? "" : "disabled title='Папка игры не найдена'"}>${icon("save")}Записать в игру</button></div>
+    <textarea class="code" id="ae-text" spellcheck="false" placeholder="Здесь текст autoexec.cfg. Соберите его из источника или впишите команды вручную."></textarea>
+    <p class="note">Полный дамп настроек применяется при каждом запуске и перезаписывает то, что вы меняли в самой игре. Обычно в autoexec держат только бинды и пару команд.
+    Чтобы CS2 его выполняла, добавьте в параметры запуска <code>${esc(S.launch_option)}</code>.</p>`;
+}
+
+async function loadAutoexec(force = false) {
+  try {
+    const r = await api("autoexec_read");
+    if (autoText === null || force) { autoText = r.text; if ($("#ae-text")) $("#ae-text").value = autoText; }
+    if (force) toast(r.exists ? "Загружен текущий autoexec.cfg." : "autoexec.cfg в папке игры пока нет.", r.exists ? "ok" : "warn");
+  } catch (e) { fail(e); }
+}
+
+/* ------------------------------------------------------------ подсказка над клавишей */
+function showTip(el) {
+  const b = bindMap()[el.dataset.k];
+  if (!b) return;
+  const t = $("#tip");
+  t.innerHTML = `<b>${esc(b[0])}</b><br><code>${esc(b[1])}</code>`;
+  t.style.display = "block";
+  const r = el.getBoundingClientRect(), w = t.offsetWidth;
+  t.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+  t.style.top = (r.top - t.offsetHeight - 8 < 8 ? r.bottom + 8 : r.top - t.offsetHeight - 8) + "px";
+}
+function hideTip() { $("#tip").style.display = "none"; }
+
+/* ------------------------------------------------------------ действия */
+async function doSave(preset = null) {
+  const acc = account();
+  if (!acc) return;
+  const only = preset === "binds";
+  const today = new Date().toISOString().slice(0, 10);
+  const html = `<div class="field"><label for="f-name">Название</label><input type="text" id="f-name" value="${esc(only ? `Бинды ${today}` : `Конфиг ${today}`)}" maxlength="80"></div>
+    <div class="field"><label for="f-note">Заметка (необязательно)</label><input type="text" id="f-note" maxlength="200"></div>
+    <div class="opts">${chk("f-binds", "Бинды", true)}${chk("f-settings", "Настройки (игровые и системные)", !only)}${chk("f-video", "Видео", !only)}
+      ${chk("f-game", "autoexec.cfg из папки игры", !only, !S.game_cfg, S.game_cfg ? "" : "Папка игры не найдена")}
+      ${chk("f-all", "Все .cfg из папки игры (там есть файлы Valve, обычно не нужно)", false, !S.game_cfg)}</div>`;
+  const run = async (m, overwrite = false) => {
+    const v = id => $("#" + id, m).checked;
+    const parts = ["binds", "settings", "video"].filter(x => v("f-" + x));
+    if (v("f-game") || v("f-all")) parts.push("game");
+    const r = await api("save", {account_id: accId, name: $("#f-name", m).value, note: $("#f-note", m).value, parts, game: v("f-all") ? "all" : "autoexec", overwrite});
+    if (r.exists) {
+      if (!(await confirmBox("Профиль уже есть", `Профиль «${r.exists}» уже существует. Заменить его?`, "Заменить", true))) return undefined;
+      return run(m, true);
+    }
+    return r.profile;
+  };
+  const p = await modal({title: only ? "Сохранить бинды" : "Сохранить текущий конфиг", text: `Аккаунт ${acc.label}`, html, ok: "Сохранить", onOk: m => run(m)});
+  if (!p) return;
+  sel = p.name;
+  await loadState();
+  toast(`Сохранено: «${p.name}» (${p.parts.map(x => PART[x]).join(", ")}).`);
+}
+
+async function withConfirm(path, data) {
+  let r = await api(path, data);
+  if (r.confirm) {
+    if (!(await confirmBox("Не удалось проверить CS2", r.confirm, "Да, игра закрыта", true))) return null;
+    r = await api(path, {...data, confirm_unknown: true});
+  }
+  return r;
+}
+
+function reportDone(r) {
+  if (!r) return;
+  toast(r.done.length ? `Готово, записано файлов: ${r.done.length}. Если Steam спросит, какую версию взять, выберите локальную.` : "Ничего не применено.", r.done.length ? "ok" : "warn", 7000);
+  for (const w of r.warnings || []) toast(w, "warn", 9000);
+}
+
+async function doRestore(only = null) {
+  const p = profile(), acc = account();
+  if (!p || !acc) return;
+  const has = x => p.parts.includes(x);
+  const gameFiles = p.files.filter(f => f.startsWith("game/")).map(f => f.slice(5));
+  let html = "";
+  if (p.account_id && p.account_id !== acc.id) html += `<div class="warnbox">Профиль снят с другого аккаунта (${esc(p.account_label)}). Применится к <b>${esc(acc.label)}</b>.</div>`;
+  if (gameFiles.length && p.imported) html += `<div class="warnbox">Профиль импортирован из ZIP. Проверьте файлы для папки игры (${esc(gameFiles.join(", "))}), прежде чем их записывать.</div>`;
+  const on = x => only ? only === x : has(x) && !(x === "game" && p.imported);
+  html += `<div class="opts">${chk("r-binds", "Бинды", on("binds"), !has("binds"))}${chk("r-settings", "Настройки", on("settings"), !has("settings"))}
+    ${chk("r-video", "Видео", on("video"), !has("video"), has("video") ? "Ключи видеокарты этого ПК сохраняются" : "")}
+    ${chk("r-game", "autoexec / .cfg в папку игры", on("game"), !has("game"), gameFiles.length ? gameFiles.slice(0, 6).join(", ") + (gameFiles.length > 6 ? "…" : "") : "")}</div>
+    <p class="note" style="margin:0">Перед записью делается автобэкап текущего состояния. Если запись сорвётся, файлы вернутся как были.</p>`;
+  const r = await modal({title: `Восстановить «${p.name}»`, text: `Аккаунт ${acc.label}`, html, ok: "Восстановить",
+    onOk: async m => {
+      const parts = ["binds", "settings", "video", "game"].filter(x => $("#r-" + x, m).checked);
+      if (!parts.length) throw new Error("Отметьте хотя бы одну часть.");
+      return (await withConfirm("restore", {name: p.name, account_id: accId, parts})) ?? null;
+    }});
+  if (!r) return;
+  reportDone(r);
+  await loadState();
+}
+
+async function doTransfer(only = null) {
+  const acc = account(), others = S.accounts.filter(a => a.id !== accId);
+  if (!acc || !others.length) return;
+  const html = `<div class="field"><label for="t-to">На какой аккаунт</label><div class="select"><select id="t-to" style="width:100%">${others.map(a => `<option value="${esc(a.id)}">${esc(a.label)}</option>`).join("")}</select></div></div>
+    <div class="opts">${chk("t-binds", "Бинды", true)}${chk("t-settings", "Настройки", only !== "binds")}</div>
+    <p class="note" style="margin:0">У аккаунта-получателя сначала делается автобэкап, поэтому перенос можно отменить, восстановив этот бэкап.</p>`;
+  const r = await modal({title: "Перенести с аккаунта", text: `Откуда: ${acc.label}`, html, ok: "Перенести",
+    onOk: async m => {
+      const parts = ["binds", "settings"].filter(x => $("#t-" + x, m).checked);
+      if (!parts.length) throw new Error("Отметьте хотя бы одну часть.");
+      return (await withConfirm("transfer", {from: accId, to: $("#t-to", m).value, parts})) ?? null;
+    }});
+  if (!r) return;
+  reportDone(r);
+  await loadState();
+}
+
+async function doRename() {
+  const p = profile();
+  if (!p) return;
+  const r = await modal({title: "Переименовать профиль", html: `<div class="field"><label for="f-name">Новое название</label><input type="text" id="f-name" value="${esc(p.name)}" maxlength="80"></div>`,
+    ok: "Сохранить", onOk: async m => { const v = $("#f-name", m).value.trim(); return v === p.name ? false : (await api("rename", {name: p.name, new: v})).name; }});
+  if (!r) return;
+  sel = r;
+  await loadState();
+  toast(`Переименовано в «${r}».`);
+}
+
+async function doDelete() {
+  const p = profile();
+  if (!p || !(await confirmBox("Удалить профиль?", `«${p.name}» удалится без возможности восстановления.`, "Удалить", true))) return;
+  try { await api("delete", {name: p.name}); sel = null; await loadState(); toast(`Удалено: «${p.name}».`); } catch (e) { fail(e); }
+}
+
+async function doExport() {
+  const p = profile();
+  if (!p) return;
+  const r = await modal({title: "Экспорт в ZIP", html: `<div class="opts">${chk("x-anon", "Убрать ID аккаунта Steam и заметку", true, false, "Рекомендуется, если выкладываете файл в интернет")}</div>`, ok: "Скачать",
+    onOk: m => ({anon: $("#x-anon", m).checked})});
+  if (!r) return;
+  const a = document.createElement("a");
+  a.href = `/export?t=${encodeURIComponent(TOKEN)}&name=${encodeURIComponent(p.name)}&anon=${r.anon ? 1 : 0}`;
+  a.download = p.name + ".zip";
+  document.body.append(a); a.click(); a.remove();
+  toast("Архив сохраняется в папку «Загрузки».");
+}
+
+async function doImport(file) {
+  if (!file) return;
+  try {
+    const r = await fetch("/api/import", {method: "POST", headers: {"X-Token": TOKEN, "X-Filename": encodeURIComponent(file.name), "Content-Type": "application/zip"}, body: await file.arrayBuffer()});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    sel = j.profile.name;
+    await loadState();
+    toast(`Импортировано: «${j.profile.name}».`);
+  } catch (e) { fail(e); }
+}
+
+async function downloadBindsCfg() {
+  try {
+    const r = await api("autoexec_build", sel ? {profile: sel, binds: true} : {account_id: accId, binds: true});
+    if (!r.text) return toast("Биндов нет, скачивать нечего.", "warn");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([r.text], {type: "text/plain"}));
+    a.download = "binds.cfg";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast("binds.cfg сохраняется в «Загрузки». В игре его можно выполнить командой exec binds.");
+  } catch (e) { fail(e); }
+}
+
+async function aeBuild() {
+  try {
+    const r = await api("autoexec_build", {...(sel ? {profile: sel} : {account_id: accId}), binds: $("#ae-b").checked, convars: $("#ae-c").checked});
+    if (!r.text) return toast("В источнике нет выбранных данных. Отметьте другую часть или впишите команды вручную.", "warn");
+    autoText = r.text; $("#ae-text").value = r.text;
+    toast("Текст собран. Проверьте его и нажмите «Записать в игру».");
+  } catch (e) { fail(e); }
+}
+
+async function aeWrite() {
+  const text = $("#ae-text").value;
+  try {
+    let r = await api("autoexec_write", {text});
+    if (r.confirm) {
+      if (!(await confirmBox("Заменить autoexec.cfg?", r.confirm, "Заменить"))) return;
+      r = await api("autoexec_write", {text, confirm: true});
+    }
+    toast(`Записано${r.backup ? `, старый сохранён как ${r.backup}` : ""}. Не забудьте параметр запуска ${S.launch_option}.`, "ok", 7000);
+  } catch (e) { fail(e); }
+}
+
+async function setSteam() {
+  const ok = await modal({title: "Папка Steam", text: "Укажите корневую папку Steam, в которой лежит папка userdata.",
+    html: `<div class="field"><label for="f-path">Путь</label><input type="text" id="f-path" value="${esc(S.steam_path || "C:\\Program Files (x86)\\Steam")}"></div>`,
+    ok: "Сохранить", onOk: async m => { await api("set_steam", {path: $("#f-path", m).value}); return true; }});
+  if (ok) { await loadState(true); toast("Папка Steam сохранена."); }
+}
+
+async function quit() {
+  if (!(await confirmBox("Выйти?", "Программа закроется. Чтобы вернуться, запустите её снова.", "Выйти"))) return;
+  try { await fetch("/api/quit", {method: "POST", headers: {"X-Token": TOKEN}}); } catch {}
+  document.body.innerHTML = `<div style="display:grid;place-items:center;height:100vh;color:var(--muted);font:15px var(--font)">Программа закрыта. Это окно можно закрыть.</div>`;
+  setTimeout(() => window.close(), 300);
+}
+
+const ACTIONS = {
+  save: () => doSave(), "save-binds": () => doSave("binds"), restore: () => doRestore(), "restore-binds": () => doRestore("binds"),
+  "restore-settings": () => doRestore("settings"), transfer: () => doTransfer(), "transfer-binds": () => doTransfer("binds"),
+  rename: doRename, delete: doDelete, export: doExport, "binds-cfg": downloadBindsCfg,
+  "b-all": () => { bItems.forEach((_, i) => toggleItem(i, true)); refreshBuilder(); },
+  "b-none": () => { bItems.forEach((_, i) => toggleItem(i, false)); refreshBuilder(); },
+  "cf-write": cfgWrite, "cf-download": cfgDownload,
+  "cf-clear": async () => { if (await confirmBox("Очистить выбор?", "Все отмеченные бинды, команды и свои строки будут убраны из сборки.", "Очистить", true)) { cart.items = {}; cart.extra = ""; refreshBuilder(); } },
+  "ae-build": aeBuild, "ae-load": () => loadAutoexec(true), "ae-write": aeWrite,
+  "ae-launch": async () => { try { await navigator.clipboard.writeText(S.launch_option); toast(`Скопировано: ${S.launch_option}. Вставьте в Steam: CS2 → Свойства → Параметры запуска.`); } catch { toast(`Скопируйте вручную: ${S.launch_option}`, "warn"); } },
+};
+
+/* ------------------------------------------------------------ события */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-a],[data-p],[data-tab],[data-open],[data-k],[data-row],[data-bsub],[data-rm],#g-auto");
+  if (!e.target.closest(".rel")) $("#menu").classList.remove("open");
+  if (!t) return;
+  try {
+    if (t.dataset.a) await ACTIONS[t.dataset.a]?.();
+    else if (t.dataset.p !== undefined) { sel = t.dataset.p || null; filter = ""; hlKey = null; renderProfiles(); await loadSource(); }
+    else if (t.dataset.tab) { tab = t.dataset.tab; filter = ""; renderMain(); }
+    else if (t.dataset.open) { $("#menu").classList.remove("open"); await api("open", {what: t.dataset.open, account_id: accId, name: sel}); }
+    else if (t.dataset.k || t.dataset.row) {
+      const k = t.dataset.k || t.dataset.row;
+      hlKey = hlKey === k ? null : k; renderTab();
+      if (hlKey && t.dataset.k) $(`tr[data-row="${CSS.escape(hlKey)}"]`)?.scrollIntoView({block: "nearest", behavior: "smooth"});
+    }
+    else if (t.dataset.bsub) { bsub = t.dataset.bsub; bq = ""; renderTab(); }
+    else if (t.dataset.rm) { delete cart.items[t.dataset.rm]; refreshBuilder(); }
+    else if (t.id === "g-auto") { autosOpen = !autosOpen; renderProfiles(); }
+  } catch (err) { fail(err); }
+});
+document.addEventListener("mouseover", e => { const k = e.target.closest(".key[data-k]"); k ? showTip(k) : hideTip(); });
+document.addEventListener("focusin", e => { const k = e.target.closest(".key[data-k]"); if (k) showTip(k); });
+document.addEventListener("input", e => {
+  if (e.target.id === "flt") { filter = e.target.value; const pos = e.target.selectionStart; renderTab(); const f = $("#flt"); f.focus(); f.setSelectionRange(pos, pos); }
+  if (e.target.id === "psearch") renderProfiles();
+  if (e.target.id === "ae-text") autoText = e.target.value;
+  if (e.target.id === "bq") { bq = e.target.value; const pos = e.target.selectionStart; renderTab(); const f = $("#bq"); f.focus(); f.setSelectionRange(pos, pos); }
+  if (e.target.id === "cf-name") {
+    cart.name = e.target.value; saveCart(); schedulePreview();
+    const base = cart.name.trim().replace(/\.cfg$/i, "") || "mybinds";
+    document.querySelectorAll(".howto code").forEach((c, i) => c.textContent = (i ? "+exec " : "exec ") + base);
+  }
+  if (e.target.id === "cf-extra") { cart.extra = e.target.value; saveCart(); schedulePreview(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.dataset.i === undefined) return;
+  toggleItem(+e.target.dataset.i, e.target.checked);
+  e.target.closest(".brow").classList.toggle("on", e.target.checked);
+  saveCart(); renderCart();
+  const n = Object.keys(cart.items).length, tb = $('[data-tab="builder"]');
+  let badge = $(".n", tb);
+  if (n && !badge) { badge = document.createElement("span"); badge.className = "n"; tb.append(badge); }
+  if (badge) n ? badge.textContent = n : badge.remove();
+});
+$("#acc").addEventListener("change", async e => {
+  accId = e.target.value; autoText = null;
+  api("select_account", {account_id: accId}).catch(() => {});
+  renderProfiles(); await loadSource();
+});
+$("#b-refresh").onclick = () => loadState(true).then(() => toast("Обновлено.")).catch(fail);
+$("#b-save").onclick = () => doSave().catch(fail);
+$("#b-import").onclick = () => $("#file").click();
+$("#file").onchange = e => { doImport(e.target.files[0]); e.target.value = ""; };
+$("#b-menu").onclick = () => $("#menu").classList.toggle("open");
+$("#m-steam").onclick = () => { $("#menu").classList.remove("open"); setSteam().catch(fail); };
+$("#m-quit").onclick = () => { $("#menu").classList.remove("open"); quit(); };
+document.addEventListener("keydown", e => {
+  if (document.querySelector(".overlay")) return;
+  // e.code = физическая клавиша: Ctrl+S работает на любой раскладке; Ctrl+Alt = AltGr, его не трогаем.
+  if (e.ctrlKey && !e.altKey && !e.metaKey && e.code === "KeyS") { e.preventDefault(); doSave().catch(fail); }
+  if (e.key === "F5") { e.preventDefault(); loadState(true).catch(fail); }
+  if (e.key === "Escape") $("#menu").classList.remove("open");
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches(".key[data-k]")) { e.preventDefault(); e.target.click(); }
+});
+
+// Сигнал «окно открыто»: без него программа сама закроется через несколько минут после закрытия окна.
+setInterval(() => api("ping").then(renderStatus).catch(() => {}), 4000);
+loadState().catch(e => { document.querySelector("#content").innerHTML = `<div class="alert">${icon("alert")}<div>${esc(e.message)}</div></div>`; });
+</script>
+</body>
+</html>

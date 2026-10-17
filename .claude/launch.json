@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cs2cfg",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["cs2_config_saver.py", "--port", "8765", "--no-window", "--token", "dev"],
+      "port": 8765
+    }
+  ]
+}
