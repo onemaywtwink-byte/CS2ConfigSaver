@@ -510,8 +510,7 @@ function overviewHtml() {
   let h = errorsHtml();
   if (!p && acc && !acc.has_cs2) h += `<div class="alert" style="background:rgba(106,167,255,.08);color:#b7d2ff">${icon("info")}<div>
     На этом аккаунте CS2 на этом ПК ещё не запускалась, поэтому сохранять пока нечего.
-    Зато сюда можно перенести бинды и настройки: выберите профиль слева и нажмите «Восстановить» или откройте другой аккаунт и нажмите «Перенести на другой аккаунт».
-    Видео применится только после первого запуска игры.</div></div>`;
+    Зато сюда можно перенести бинды, настройки и графику: выберите профиль слева и нажмите «Восстановить» или откройте другой аккаунт и нажмите «Перенести на другой аккаунт».</div></div>`;
   h += `<div class="cards">${stat("Бинды", nb, has("cs2_user_keys_0_slot0.vcfg"))}${stat("Настройки", nc, has("cs2_user_convars_0_slot0.vcfg"))}
     ${stat("Системные настройки", nm, has("cs2_machine_convars.vcfg"))}${stat("Видео", nv, has("cs2_video.txt"))}</div>`;
   const rows = [];
@@ -824,7 +823,7 @@ async function doRestore(only = null) {
   if (gameFiles.length && p.imported) html += `<div class="warnbox">Профиль импортирован из ZIP. Проверьте файлы для папки игры (${esc(gameFiles.join(", "))}), прежде чем их записывать.</div>`;
   const on = x => only ? only === x : has(x) && !(x === "game" && p.imported);
   html += `<div class="opts">${chk("r-binds", "Бинды", on("binds"), !has("binds"))}${chk("r-settings", "Настройки", on("settings"), !has("settings"))}
-    ${chk("r-video", "Видео", on("video"), !has("video"), has("video") ? "Ключи видеокарты этого ПК сохраняются" : "")}
+    ${chk("r-video", "Графика (видео)", on("video"), !has("video"), has("video") ? "Ключи видеокарты этого ПК сохраняются" : "В профиле нет видеонастроек")}
     ${chk("r-game", "autoexec / .cfg в папку игры", on("game"), !has("game"), gameFiles.length ? gameFiles.slice(0, 6).join(", ") + (gameFiles.length > 6 ? "…" : "") : "")}</div>
     <p class="note" style="margin:0">Перед записью делается автобэкап текущего состояния. Если запись сорвётся, файлы вернутся как были.</p>`;
   const r = await modal({title: `Восстановить «${p.name}»`, text: `Аккаунт ${acc.label}`, html, ok: "Восстановить",
@@ -842,11 +841,12 @@ async function doTransfer(only = null) {
   const acc = account(), others = S.accounts.filter(a => a.id !== accId);
   if (!acc || !others.length) return;
   const html = `<div class="field"><label for="t-to">На какой аккаунт</label><div class="select"><select id="t-to" style="width:100%">${others.map(a => `<option value="${esc(a.id)}">${esc(a.label)}</option>`).join("")}</select></div></div>
-    <div class="opts">${chk("t-binds", "Бинды", true)}${chk("t-settings", "Настройки", only !== "binds")}</div>
+    <div class="opts">${chk("t-binds", "Бинды", true)}${chk("t-settings", "Настройки", only !== "binds")}
+      ${chk("t-video", "Графика (видео)", only !== "binds", false, "Разрешение, качество, режим экрана. Ключи видеокарты остаются от этого ПК")}</div>
     <p class="note" style="margin:0">У аккаунта-получателя сначала делается автобэкап, поэтому перенос можно отменить, восстановив этот бэкап.</p>`;
   const r = await modal({title: "Перенести с аккаунта", text: `Откуда: ${acc.label}`, html, ok: "Перенести",
     onOk: async m => {
-      const parts = ["binds", "settings"].filter(x => $("#t-" + x, m).checked);
+      const parts = ["binds", "settings", "video"].filter(x => $("#t-" + x, m).checked);
       if (!parts.length) throw new Error("Отметьте хотя бы одну часть.");
       return (await withConfirm("transfer", {from: accId, to: $("#t-to", m).value, parts})) ?? null;
     }});

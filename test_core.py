@@ -337,6 +337,18 @@ class Review5(Base):
         t = c.build_cfg("my_binds", {"\\": "toggleconsole", "MOUSE1": "+attack"}, {"sensitivity": "1.2"}, "echo ok")
         self.assertIn("exec my_binds", t); self.assertIn('bind "\\" "toggleconsole"', t); self.assertIn('sensitivity "1.2"', t)
         self.assertIn("echo ok", t); self.assertEqual(c.build_cfg("x", {}, {}), "")
+    def test_transfer_includes_video_and_uses_sibling_gpu_keys(self):  # баг: графика не переносилась
+        W(self.acc.cfg_dir / "cs2_video.txt", VID_NEW)  # на этом ПК: 0x1002 / 0x2222, оконный режим
+        new = c.Account("888", self.steam / "userdata" / "888" / "730" / "local" / "cfg")  # CS2 ещё не запускалась
+        done, warns = self.store.transfer(self.acc, new, ("binds", "video"), running_check=NOT_RUNNING)
+        self.assertIn("cs2_video.txt", done); self.assertEqual(warns, [])
+        self.assertIn('"setting.fullscreen"\t\t"0"', (new.cfg_dir / "cs2_video.txt").read_text(encoding="utf-8"))
+        # профиль с другого ПК на аккаунт без видеофайла: настройки из профиля, GPU-ключи соседнего аккаунта
+        p = self.store.save("other_pc", self.acc, None, game_names=()); W(p.path / "user/cs2_video.txt", VID_OLD)
+        third = c.Account("999", self.steam / "userdata" / "999" / "730" / "local" / "cfg")
+        self.store.restore(p, third, None, ("video",), running_check=NOT_RUNNING)
+        v = (third.cfg_dir / "cs2_video.txt").read_text(encoding="utf-8")
+        self.assertIn('"setting.fullscreen"\t\t"1"', v); self.assertIn('"VendorID"\t\t"0x1002"', v)
     def test_readonly_mode_restored_exactly(self):
         t = self.game / "autoexec.cfg"; os.chmod(t, 0o444); before = stat.S_IMODE(t.stat().st_mode)
         c.write_text_atomic(t, "new"); self.assertEqual(stat.S_IMODE(t.stat().st_mode), before)

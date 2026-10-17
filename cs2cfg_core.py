@@ -418,6 +418,18 @@ def merge_video(new_text: str, current_text: str) -> str:
     return new_text
 
 
+def sibling_video(cfg_dir: Path) -> Path | None:
+    """cs2_video.txt другого аккаунта на этом же ПК (самый свежий): видеокарта у них та же,
+    поэтому GPU-ключи из него подходят аккаунту, у которого своего файла ещё нет."""
+    own = Path(cfg_dir)
+    try:
+        userdata = own.parents[3]  # <userdata>/<id>/730/local/cfg
+        cands = [p for p in userdata.glob(f"*/730/local/cfg/{VIDEO_FILE}") if p.parent != own and p.is_file()]
+        return max(cands, key=lambda p: p.stat().st_mtime) if cands else None
+    except (OSError, IndexError):
+        return None
+
+
 def compare_struct(cur: Path, prof: Path) -> list[dict]:
     """Сравнение по разделам: [{title, file, missing, error, diff: [{op, key, old, new}]}], текущий -> профиль."""
     out = []
@@ -665,9 +677,11 @@ class ProfileStore:
         warnings: list[str] = []
         do_video = "video" in parts and (user_src / VIDEO_FILE).is_file()
         cur_video = account.cfg_dir / VIDEO_FILE
-        if do_video and not cur_video.is_file():
+        # GPU-ключи берём из своего файла, а если его нет, из файла другого аккаунта на этом ПК.
+        gpu_ref = cur_video if cur_video.is_file() else (sibling_video(account.cfg_dir) if do_video else None)
+        if do_video and gpu_ref is None:
             do_video = False
-            warnings.append("Видео пропущено: на этом ПК ещё нет cs2_video.txt. Запустите CS2 один раз, "
+            warnings.append("Видео пропущено: на этом ПК ещё нет ни одного cs2_video.txt. Запустите CS2 один раз, "
                             "чтобы игра создала его с вашей видеокартой, и повторите.")
         do_user = [fn for fn in part_files(parts) if fn != VIDEO_FILE and (user_src / fn).is_file()]
         if not (do_user or do_video or game_src):
@@ -691,7 +705,8 @@ class ProfileStore:
                 done.append(fn)
             if do_video:
                 new = (user_src / VIDEO_FILE).read_text(encoding="utf-8", errors="replace")
-                write_text_atomic(cur_video, merge_video(new, cur_video.read_text(encoding="utf-8", errors="replace")))
+                assert gpu_ref is not None
+                write_text_atomic(cur_video, merge_video(new, gpu_ref.read_text(encoding="utf-8", errors="replace")))
                 done.append(VIDEO_FILE)
             for s_ in game_src:
                 assert game_cfg is not None

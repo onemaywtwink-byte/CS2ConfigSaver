@@ -203,7 +203,7 @@ class Backend:
     def api_transfer(self, d):
         with self.lock:
             src, dst = self.account(d.get("from")), self.account(d.get("to"))
-            parts = self._parts(d, ("binds", "settings"))
+            parts = self._parts(d, ("binds", "settings", "video"))
             return self._confirmable(lambda: self.store.transfer(src, dst, parts,
                                                                  confirm_unknown=bool(d.get("confirm_unknown"))))
 
